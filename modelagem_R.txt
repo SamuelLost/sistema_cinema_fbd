@@ -1,0 +1,26 @@
+Modelagem Relacional do Trabalho de Banco de Dados - Cinema
+
+Aluno: Samuel Henrique Guimarães Alencar
+Matrícula: 473360
+
+Cinema([PK]id[serial]:int, nome:varchar, endereco:varchar, cidade:varchar, uf:varchar, cep:varchar)
+
+Diretor([PK]id_diretor[serial]:int, nome_diretor:varchar)
+
+Categoria([PK]id_cat[serial]:int, nome_cat:varchar)
+
+Usuario([PK]id_usuario[serial]:int, [UNIQUE]cpf:varchar, nome:varchar, [UNIQUE]email:varchar, senha:varchar, dt_nasc:date, telefone:varchar, genero:char)
+
+Sala([PK]id_sala:int, qntd_assento:int, nome:varchar, [FK]id_cinema)
+id_cinema Referencia Cinema(id)
+
+Filme([PK]id_filme:int, nome_original:varchar, nome_ptBR:varchar, ano_lanc:int, [FK]id_sala:int, sessao:timestamp, [FK]id_diretor:int, [FK]id_cat:int, sinopse:text)
+id_sala Referencia Sala(id_sala)
+id_diretor Referencia Diretor(id_diretor)
+id_cat Referencia Categoria(id_cat)
+
+Ingresso([PK]id_ingresso:int, valor:int, data_de_compra:timestamp, [FK]cpf_usuario:int, [FK]id_filme:int, [FK]id_cinema:int, [FK]id_sala:int)
+cpf_usuario Referencia Usuario(cpf)
+id_filme Referencia Filme(id_filme)
+id_cinema Referencia Cinema(id)
+id_sala Referencia Sala(id_sala)
