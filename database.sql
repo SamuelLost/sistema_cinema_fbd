@@ -209,13 +209,23 @@ LEFT JOIN Categoria cat ON f.id_cat = cat.id_cat
 ORDER BY f.ano_lanc DESC;
 
 -- Quantos ingressos cada pessoa comprou para cada filme
-SELECT u.nome, f.nome_ptBR, f.sessao, COUNT(*) as qntd, i.id_cinema, s.nome AS sala
+-- SELECT u.nome, f.nome_ptBR, f.sessao, COUNT(*) as qntd, i.id_cinema, s.nome AS sala
+-- FROM ingresso i
+-- JOIN sala s ON s.id_sala = i.id_sala
+-- JOIN usuario u ON u.cpf = i.cpf_usuario
+-- JOIN filme f ON i.id_filme = f.id_filme
+-- GROUP BY u.nome, i.valor,f.nome_ptBR, i.id_cinema, s.nome, f.sessao
+-- ORDER BY u.nome;
+
+-- Quantos ingressos cada pessoa comprou para cada filme
+SELECT u.nome, f.nome_ptBR, COUNT(*) as qntd 
 FROM ingresso i
 JOIN sala s ON s.id_sala = i.id_sala
 JOIN usuario u ON u.cpf = i.cpf_usuario
 JOIN filme f ON i.id_filme = f.id_filme
-GROUP BY u.nome, i.valor,f.nome_ptBR, i.id_cinema, s.nome, f.sessao
+GROUP BY u.nome, f.nome_ptBR
 ORDER BY u.nome;
+
 
 -- Top 3 de maiores compradores naquele cinema
 -- Sem a cláusula WHERE a query mostra os maiores compradores do sistema
