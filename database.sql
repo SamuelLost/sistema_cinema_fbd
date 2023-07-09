@@ -275,4 +275,24 @@ JOIN filme f ON d.id_diretor = f.id_diretor
 WHERE d.id_diretor IN (SELECT f.id_diretor FROM filme f)
 GROUP BY d.nome_diretor, f.nome_ptBR;
 
+SELECT f.nome_ptBR
+FROM filme f
+JOIN sala s ON f.id_sala = s.id_sala
+JOIN cinema c ON c.id = s.id_cinema
+WHERE c.nome = 'Cinema Francisco Lucena';
 
+SELECT f.nome_ptBR, s.id_sala, f.sessao, s.qntd_assento - COUNT(i.id_ingresso) AS poltronas_livres
+FROM filme f
+JOIN sala s ON f.id_sala = s.id_sala
+JOIN cinema c ON c.id = s.id_cinema
+LEFT JOIN ingresso i ON i.id_filme = f.id_filme
+WHERE c.nome = 'Cinema Francisco Lucena'
+GROUP BY f.nome_ptBR, s.qntd_assento, f.sessao, s.id_sala, f.ano_lanc
+ORDER BY f.ano_lanc DESC;
+
+SELECT f.nome_ptBR, u.nome, i.data_de_compra, i.valor, s.id_sala
+FROM filme f
+JOIN ingresso i ON f.id_filme = i.id_filme
+JOIN usuario u ON u.cpf = i.cpf_usuario
+JOIN sala s ON s.id_sala = i.id_sala
+WHERE f.nome_ptBR = 'Guardiões da Galáxia Vol. 3' and s.id_sala = 2;
