@@ -296,3 +296,8 @@ JOIN ingresso i ON f.id_filme = i.id_filme
 JOIN usuario u ON u.cpf = i.cpf_usuario
 JOIN sala s ON s.id_sala = i.id_sala
 WHERE f.nome_ptBR = 'Guardiões da Galáxia Vol. 3' and s.id_sala = 2;
+
+
+select s.id_sala, s.qntd_assento, s.nome as nome_sala, c.id, c.nome as nome_cinema
+from sala s
+join cinema c on s.id_cinema = c.id;
