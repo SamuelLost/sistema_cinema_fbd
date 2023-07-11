@@ -144,6 +144,11 @@ INSERT INTO Usuario (cpf, nome, email, senha, dt_nasc, telefone, genero) VALUES
   ('12345678900', 'Camila Sousa', 'camila@example.com', crypt('qweasd', gen_salt('md5')), '1994-08-12', '987654321', 'F'),
   ('67667899899', 'Ana Clara', 'anaclara@example.com', crypt('qweasd', gen_salt('md5')), '14-10-2000', '9825684665', 'F');
 
+ALTER TABLE Usuario
+ADD COLUMN ehadm BOOLEAN DEFAULT FALSE;
+
+UPDATE Usuario SET ehadm = TRUE WHERE cpf = '44444444444';
+
 -- Inserção de dados na tabela Filme
 INSERT INTO Filme (nome_original, nome_ptBR, ano_lanc, id_sala, sessao, sinopse, id_diretor, id_cat) VALUES
   ('Joker', 'Coringa', 2019, 1, '20/06/2023 10:00', 'Arthur Fleck trabalha como palhaço para uma agência de talentos e, toda semana, precisa comparecer a uma agente social, devido aos seus conhecidos problemas mentais. Após ser demitido, Fleck reage mal à gozação de três homens em pleno metrô e os mata. Os assassinatos iniciam um movimento popular contra a elite de Gotham City, da qual Thomas Wayne é seu maior representante.', 11, 9),
@@ -200,6 +205,58 @@ INSERT INTO Ingresso (valor, data_de_compra, cpf_usuario, id_filme, id_cinema, i
   (20, '15/06/2023 14:00:00', '55555555555', 2, 1, 2),
   (20, '15/06/2023 14:00:00', '55555555555', 2, 1, 2);
 
+--Procedure que verifica a quantidade de assentos de uma sala e quantos ingressos foram vendidos para aquele filme
+CREATE OR REPLACE PROCEDURE verificar_disponibilidade(
+  p_id_filme INT,
+  p_id_sala INT
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_qntd_assentos INT;
+  v_qntd_ingressos INT;
+BEGIN
+  SELECT qntd_assento INTO v_qntd_assentos
+  FROM sala
+  WHERE id_sala = p_id_sala;
+
+  SELECT COUNT(*) INTO v_qntd_ingressos
+  FROM ingresso
+  WHERE id_filme = p_id_filme
+    AND id_sala = p_id_sala;
+
+  IF v_qntd_ingressos >= v_qntd_assentos THEN
+    RAISE EXCEPTION 'Não há poltronas disponíveis para este filme e sala.';
+  END IF;
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION verificar_disponibilidade_trigger()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  CALL verificar_disponibilidade(NEW.id_filme, NEW.id_sala);
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER before_insert_ingresso
+BEFORE INSERT ON ingresso
+FOR EACH ROW
+EXECUTE FUNCTION verificar_disponibilidade_trigger();
+
+-- Ranking de maiores compradores
+CREATE OR REPLACE VIEW top3_users AS (
+  SELECT u.nome AS nome_usuario, SUM(i.valor) AS total_gasto
+  FROM usuario u
+  JOIN ingresso i ON u.cpf = i.cpf_usuario
+  JOIN cinema c ON c.id = i.id_cinema
+  GROUP BY u.nome
+  ORDER BY total_gasto DESC
+  LIMIT 3
+);
 
 -- Informação sobre os filmes cadastrados
 SELECT f.nome_ptBR, dir.nome_diretor, f.ano_lanc, cat.nome_cat 
@@ -225,19 +282,6 @@ JOIN usuario u ON u.cpf = i.cpf_usuario
 JOIN filme f ON i.id_filme = f.id_filme
 GROUP BY u.nome, f.nome_ptBR
 ORDER BY u.nome;
-
-
--- Top 3 de maiores compradores naquele cinema
--- Sem a cláusula WHERE a query mostra os maiores compradores do sistema
--- Com a cláusula WHERE a query mostra os maiores compradores daquele cinema específico
-SELECT u.nome AS nome_usuario, SUM(i.valor) AS total_gasto
-FROM usuario u
-JOIN ingresso i ON u.cpf = i.cpf_usuario
-JOIN cinema c ON c.id = i.id_cinema
---WHERE c.nome = 'Cinema Francisco Lucena'
-GROUP BY u.nome
-ORDER BY total_gasto DESC
-LIMIT 3;
 
 -- Filmes e seus ingressos vendidos 
 SELECT f.nome_ptBR, COUNT(i.id_ingresso) AS quantidade_ingressos, sum(i.valor) as valor_arrecadado
@@ -275,29 +319,31 @@ JOIN filme f ON d.id_diretor = f.id_diretor
 WHERE d.id_diretor IN (SELECT f.id_diretor FROM filme f)
 GROUP BY d.nome_diretor, f.nome_ptBR;
 
-SELECT f.nome_ptBR
-FROM filme f
-JOIN sala s ON f.id_sala = s.id_sala
-JOIN cinema c ON c.id = s.id_cinema
-WHERE c.nome = 'Cinema Francisco Lucena';
+-- SELECT f.nome_ptBR
+-- FROM filme f
+-- JOIN sala s ON f.id_sala = s.id_sala
+-- JOIN cinema c ON c.id = s.id_cinema
+-- WHERE c.nome = 'Cinema Francisco Lucena';
 
-SELECT f.nome_ptBR, s.id_sala, f.sessao, s.qntd_assento - COUNT(i.id_ingresso) AS poltronas_livres
-FROM filme f
-JOIN sala s ON f.id_sala = s.id_sala
-JOIN cinema c ON c.id = s.id_cinema
-LEFT JOIN ingresso i ON i.id_filme = f.id_filme
-WHERE c.nome = 'Cinema Francisco Lucena'
-GROUP BY f.nome_ptBR, s.qntd_assento, f.sessao, s.id_sala, f.ano_lanc
-ORDER BY f.ano_lanc DESC;
+-- SELECT f.nome_ptBR, s.id_sala, f.sessao, s.qntd_assento - COUNT(i.id_ingresso) AS poltronas_livres
+-- FROM filme f
+-- JOIN sala s ON f.id_sala = s.id_sala
+-- JOIN cinema c ON c.id = s.id_cinema
+-- LEFT JOIN ingresso i ON i.id_filme = f.id_filme
+-- WHERE c.nome = 'Cinema Francisco Lucena'
+-- GROUP BY f.nome_ptBR, s.qntd_assento, f.sessao, s.id_sala, f.ano_lanc
+-- ORDER BY f.ano_lanc DESC;
 
-SELECT f.nome_ptBR, u.nome, i.data_de_compra, i.valor, s.id_sala
-FROM filme f
-JOIN ingresso i ON f.id_filme = i.id_filme
-JOIN usuario u ON u.cpf = i.cpf_usuario
-JOIN sala s ON s.id_sala = i.id_sala
-WHERE f.nome_ptBR = 'Guardiões da Galáxia Vol. 3' and s.id_sala = 2;
+-- SELECT f.nome_ptBR, u.nome, i.data_de_compra, i.valor, s.id_sala
+-- FROM filme f
+-- JOIN ingresso i ON f.id_filme = i.id_filme
+-- JOIN usuario u ON u.cpf = i.cpf_usuario
+-- JOIN sala s ON s.id_sala = i.id_sala
+-- WHERE f.nome_ptBR = 'Guardiões da Galáxia Vol. 3' and s.id_sala = 2;
 
 
-select s.id_sala, s.qntd_assento, s.nome as nome_sala, c.id, c.nome as nome_cinema
-from sala s
-join cinema c on s.id_cinema = c.id;
+-- select s.id_sala, s.qntd_assento, s.nome as nome_sala, c.id, c.nome as nome_cinema
+-- from sala s
+-- join cinema c on s.id_cinema = c.id;
+
+
