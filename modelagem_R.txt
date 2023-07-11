@@ -9,7 +9,7 @@ Diretor([PK]id_diretor[serial]:int, nome_diretor:varchar)
 
 Categoria([PK]id_cat[serial]:int, nome_cat:varchar)
 
-Usuario([PK]id_usuario[serial]:int, [UNIQUE]cpf:varchar, nome:varchar, [UNIQUE]email:varchar, senha:varchar, dt_nasc:date, telefone:varchar, genero:char)
+Usuario([PK]id_usuario[serial]:int, [UNIQUE]cpf:varchar, nome:varchar, [UNIQUE]email:varchar, senha:varchar, dt_nasc:date, telefone:varchar, genero:char, ehadm:bool)
 
 Sala([PK]id_sala:int, qntd_assento:int, nome:varchar, [FK]id_cinema)
 id_cinema Referencia Cinema(id)
