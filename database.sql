@@ -205,6 +205,9 @@ INSERT INTO Ingresso (valor, data_de_compra, cpf_usuario, id_filme, id_cinema, i
   (20, '15/06/2023 14:00:00', '55555555555', 2, 1, 2),
   (20, '15/06/2023 14:00:00', '55555555555', 2, 1, 2);
 
+CREATE USER usuario_leitura WITH PASSWORD 'usuario_leitura';
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO usuario_leitura;
+
 --Procedure que verifica a quantidade de assentos de uma sala e quantos ingressos foram vendidos para aquele filme
 CREATE OR REPLACE PROCEDURE verificar_disponibilidade(
   p_id_filme INT,
@@ -258,6 +261,17 @@ CREATE OR REPLACE VIEW top3_users AS (
   LIMIT 3
 );
 
+-- Ranking de filmes mais assistidos
+-- Filmes e seus ingressos vendidos 
+CREATE OR REPLACE VIEW top3_filmes AS (
+  SELECT f.nome_ptBR, COUNT(i.id_ingresso) AS quantidade_ingressos, sum(i.valor) as valor_arrecadado
+  FROM filme f
+  INNER JOIN ingresso i ON f.id_filme = i.id_filme
+  GROUP BY f.nome_ptBR
+  ORDER BY quantidade_ingressos DESC
+  LIMIT 3
+);
+
 -- Informação sobre os filmes cadastrados
 SELECT f.nome_ptBR, dir.nome_diretor, f.ano_lanc, cat.nome_cat 
 from filme f
@@ -283,12 +297,7 @@ JOIN filme f ON i.id_filme = f.id_filme
 GROUP BY u.nome, f.nome_ptBR
 ORDER BY u.nome;
 
--- Filmes e seus ingressos vendidos 
-SELECT f.nome_ptBR, COUNT(i.id_ingresso) AS quantidade_ingressos, sum(i.valor) as valor_arrecadado
-FROM filme f
-INNER JOIN ingresso i ON f.id_filme = i.id_filme
-GROUP BY f.nome_ptBR
-ORDER BY quantidade_ingressos DESC;
+
 
 -- Quantas poltronas livres existem para aquele filme, sessão e Cinema.
 SELECT c.nome, f.nome_ptBR, f.sessao, s.id_sala, s.qntd_assento - COUNT(i.id_ingresso) as poltronas_livres
@@ -319,31 +328,8 @@ JOIN filme f ON d.id_diretor = f.id_diretor
 WHERE d.id_diretor IN (SELECT f.id_diretor FROM filme f)
 GROUP BY d.nome_diretor, f.nome_ptBR;
 
--- SELECT f.nome_ptBR
--- FROM filme f
--- JOIN sala s ON f.id_sala = s.id_sala
--- JOIN cinema c ON c.id = s.id_cinema
--- WHERE c.nome = 'Cinema Francisco Lucena';
-
--- SELECT f.nome_ptBR, s.id_sala, f.sessao, s.qntd_assento - COUNT(i.id_ingresso) AS poltronas_livres
--- FROM filme f
--- JOIN sala s ON f.id_sala = s.id_sala
--- JOIN cinema c ON c.id = s.id_cinema
--- LEFT JOIN ingresso i ON i.id_filme = f.id_filme
--- WHERE c.nome = 'Cinema Francisco Lucena'
--- GROUP BY f.nome_ptBR, s.qntd_assento, f.sessao, s.id_sala, f.ano_lanc
--- ORDER BY f.ano_lanc DESC;
-
--- SELECT f.nome_ptBR, u.nome, i.data_de_compra, i.valor, s.id_sala
--- FROM filme f
--- JOIN ingresso i ON f.id_filme = i.id_filme
--- JOIN usuario u ON u.cpf = i.cpf_usuario
--- JOIN sala s ON s.id_sala = i.id_sala
--- WHERE f.nome_ptBR = 'Guardiões da Galáxia Vol. 3' and s.id_sala = 2;
-
-
--- select s.id_sala, s.qntd_assento, s.nome as nome_sala, c.id, c.nome as nome_cinema
--- from sala s
--- join cinema c on s.id_cinema = c.id;
-
+-- Contar o número de gêneros dos usuários
+SELECT genero, COUNT(1)
+FROM usuario
+GROUP BY genero;
 
